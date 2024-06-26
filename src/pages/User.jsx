@@ -60,14 +60,29 @@ const User = () => {
     });
   }, []);
   return (
-    <div>
-      {users.map((user) => (
-        <div key={user.id}>
-          {user.name} - {user.email}
-          <button onClick={() => deleteUser(user.id)}>Delete</button>
-        </div>
-      ))}
-    </div>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Contact (Email, Phone)</th>
+          <th>Username</th>
+          <th>Reporting To</th>
+          <th>Role</th>
+        </tr>
+      </thead>
+      <tbody>
+        {users.map((user) => (
+          console.log(user),
+          <tr key={user.id}>
+            <td>{user.name}</td>
+            <td>{user.email}<br />{user.phone}</td>
+            <td>{user.username}</td>
+            <td>{user.manager?.name}</td>
+            <td>{user.roles.name}</td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
   );
 };
 
