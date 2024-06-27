@@ -1,9 +1,6 @@
-import React from "react";
-import axios from 'axios'
-import config from '../config.json' 
-import sarchInTheTable from "../hooks/SarchInTable";
-import sortByParam from "../hooks/Sort";
-import filterBy from "../hooks/Filter";
+import React, { useState, useEffect } from 'react';
+import axios from 'axios';
+import config from '../config.json';
 
 /**
  * Retrieves all the users from the API.
@@ -12,14 +9,10 @@ import filterBy from "../hooks/Filter";
  */
 async function getAllUsers() {
   try {
-    // Construct the URL by appending the endpoint to the base URL
     const url = `${config.baseURL}/user`;
-    // Send a GET request to the constructed URL and await the response
     const response = await axios.get(url);
-    // Return the data from the response, which is an array of user objects
     return response.data;
   } catch (error) {
-    // If an error occurs, log the error message and return an empty array
     console.error(error.message);
     return [];
   }
@@ -34,55 +27,94 @@ async function getAllUsers() {
  */
 async function deleteUser(id) {
   try {
-    // Construct the URL by appending the user ID to the base URL
     const url = `${config.baseURL}/user/${id}`;
-    // Send a DELETE request to the constructed URL
     const response = await axios.delete(url);
-    // Log a success message if the response status is 200
     if (response.status === 200) {
       console.log('User deleted successfully');
-    }else{
+    } else {
       console.log('User not deleted');
       throw new Error('User not deleted');
     }
   } catch (error) {
-    // If an error occurs, log the error message
     console.error(error.message);
   }
 }
 
 const User = () => {
-  const [users, setUsers] = React.useState([]);
-  React.useEffect(() => {
+  const [users, setUsers] = useState([]);
+  const [roles, setRoles] = useState([]);
+  const [selectedRole, setSelectedRole] = useState('');
+  const [searchTerm, setSearchTerm] = useState('');
+
+  useEffect(() => {
     getAllUsers().then((res) => {
-      console.log(res);
       setUsers(res.users);
+      const uniqueRoles = [...new Set(res.users.map(user => user.roles.name))];
+      setRoles(uniqueRoles);
     });
   }, []);
+
+  const handleRoleChange = (e) => {
+    setSelectedRole(e.target.value);
+  };
+
+  const handleSearchChange = (e) => {
+    setSearchTerm(e.target.value);
+  };
+
+  const filteredUsers = users.filter(user => {
+    const matchesRole = selectedRole ? user.roles.name === selectedRole : true;
+    const matchesSearch = searchTerm ? (
+      user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      user.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      user.phone?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      user.username?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (user.manager?.name.toLowerCase().includes(searchTerm.toLowerCase()) ?? false)
+    ) : true;
+    return matchesRole && matchesSearch;
+  });
+
+  console.log('Filtered Users:', filteredUsers);
+
   return (
-    <table>
-      <thead>
-        <tr>
-          <th>Name</th>
-          <th>Contact (Email, Phone)</th>
-          <th>Username</th>
-          <th>Reporting To</th>
-          <th>Role</th>
-        </tr>
-      </thead>
-      <tbody>
-        {users.map((user) => (
-          console.log(user),
-          <tr key={user.id}>
-            <td>{user.name}</td>
-            <td>{user.email}<br />{user.phone}</td>
-            <td>{user.username}</td>
-            <td>{user.manager?.name}</td>
-            <td>{user.roles.name}</td>
+    <div>
+      <h1>Users</h1>
+      <div>
+        <label>Filter by Role: </label>
+        <select value={selectedRole} onChange={handleRoleChange}>
+          <option value=''>All</option>
+          {roles.map((role, index) => (
+            <option key={index} value={role}>{role}</option>
+          ))}
+        </select>
+      </div>
+      <div>
+        <label>Search: </label>
+        <input type="text" value={searchTerm} onChange={handleSearchChange} placeholder="Search users..." />
+      </div>
+      <table>
+        <thead>
+          <tr>
+            <th>Name</th>
+            <th>Contact (Email, Phone)</th>
+            <th>Username</th>
+            <th>Reporting To</th>
+            <th>Role</th>
           </tr>
-        ))}
-      </tbody>
-    </table>
+        </thead>
+        <tbody>
+          {filteredUsers.map((user) => (
+            <tr key={user.id}>
+              <td>{user.name}</td>
+              <td>{user.email}<br />{user.phone}</td>
+              <td>{user.username}</td>
+              <td>{user.manager?.name}</td>
+              <td>{user.roles.name}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
   );
 };
 
